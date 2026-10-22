@@ -1,76 +1,304 @@
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#070914">
-  <title>AG SUB2UNLOCK</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="./">
-      <span class="brand-icon">AG</span>
-      <span>SUB<span class="blue">2</span>UNLOCK</span>
-    </a>
-    <span class="live"><i></i> SYSTEM ONLINE</span>
-  </header>
+"use strict";
 
-  <main class="container">
-    <section class="hero">
-      <div class="eyebrow">✦ AG UNLOCK PLATFORM</div>
-      <h1>Complete Tasks.<br><span>Unlock Your File.</span></h1>
-      <p>Complete all 7 tasks to reveal the Telegram delivery link.</p>
+const API_BASE = "https://ag-sub2unlock.onrender.com";
+const DELIVERY_BOT_USERNAME = "AGSub2UnlockFileBot"; // Replace with your actual Bot 2 username
+const WAIT_SECONDS = 5;
 
-      <div class="progress-card">
-        <div class="progress-info">
-          <span>YOUR PROGRESS</span>
-          <strong id="progressText">0 / 7</strong>
+const state = {
+  tasks: [],
+  completed: new Set(),
+  opened: new Map(),
+  timers: new Map(),
+  loading: false
+};
+
+const $ = (selector) => document.querySelector(selector);
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function validURL(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function showStatus(message, isError = false) {
+  let el = $("#statusMessage");
+
+  if (!el) {
+    el = document.createElement("p");
+    el.id = "statusMessage";
+    el.setAttribute("role", "status");
+    el.style.cssText =
+      "padding:12px;border-radius:10px;margin:12px 0;color:#fff;background:#101522;border:1px solid #00d9ff";
+
+    $("#taskList")?.before(el);
+  }
+
+  el.textContent = message;
+  el.style.borderColor = isError ? "#ff5470" : "#00d9ff";
+}
+
+function updateProgress() {
+  const total = state.tasks.length;
+  const done = state.completed.size;
+  const remaining = Math.max(0, total - done);
+  const percent = total ? Math.round(done / total * 100) : 0;
+
+  const text = $("#progressText");
+  const bar = $("#progressBar");
+  const message = $("#progressMessage");
+  const percentage = $("#progressPercent");
+  const unlock = $("#unlockPanel");
+
+  if (text) text.textContent = `${done} / ${total}`;
+  if (bar) {
+    bar.style.width = `${percent}%`;
+    bar.setAttribute("role", "progressbar");
+    bar.setAttribute("aria-valuemin", "0");
+    bar.setAttribute("aria-valuemax", "100");
+    bar.setAttribute("aria-valuenow", String(percent));
+  }
+
+  if (message) {
+    message.textContent = remaining === 1
+      ? "1 task remaining"
+      : `${remaining} tasks remaining`;
+  }
+
+  if (percentage) percentage.textContent = `${percent}%`;
+
+  if (unlock) {
+    unlock.classList.toggle("hidden", !(total > 0 && done === total));
+  }
+
+  const deliveryButton = $("#deliveryButton");
+  if (deliveryButton && total > 0 && done === total) {
+    deliveryButton.href =
+      `https://t.me/${encodeURIComponent(DELIVERY_BOT_USERNAME)}`;
+  }
+}
+
+function renderTasks() {
+  const container = $("#taskList");
+  if (!container) {
+    showStatus("HTML-এ #taskList পাওয়া যায়নি।", true);
+    return;
+  }
+
+  if (!state.tasks.length) {
+    container.innerHTML = "<p>No tasks available.</p>";
+    updateProgress();
+    return;
+  }
+
+  container.innerHTML = state.tasks.map((task) => {
+    const id = task.id;
+    const done = state.completed.has(id);
+    const hasOpened = state.opened.has(id);
+    const ready = state.opened.get(id) === true;
+
+    let completeLabel = "I Completed This";
+    if (done) completeLabel = "Completed";
+    else if (hasOpened && !ready) completeLabel = "Please wait...";
+
+    return `
+      <article class="task-card" data-task-id="${id}">
+        <div class="task-info">
+          <h3>${escapeHTML(task.title)}</h3>
+          <span class="task-type">
+            ${task.kind === "daily" ? "Daily Task" : "Permanent Task"}
+          </span>
+          <span class="task-status ${done ? "completed" : "pending"}">
+            ${done ? "Completed" : "Not completed"}
+          </span>
         </div>
-        <div class="progress-track">
-          <div id="progressBar" class="progress-bar"></div>
+
+        <div class="task-actions">
+          <button
+            type="button"
+            class="open-task"
+            data-id="${id}"
+            ${done || hasOpened ? "disabled" : ""}
+          >${hasOpened ? "Task Opened" : "Open Task"}</button>
+
+          <button
+            type="button"
+            class="complete-task"
+            data-id="${id}"
+            ${done || !ready ? "disabled" : ""}
+          >${completeLabel}</button>
         </div>
-        <div class="progress-bottom">
-          <span id="progressMessage">7 tasks remaining</span>
-          <span id="progressPercent">0%</span>
-        </div>
-      </div>
-    </section>
 
-    <section class="task-section">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">YOUR CHECKLIST</span>
-          <h2>Complete All Tasks</h2>
-        </div>
-        <span class="task-count">7 TASKS</span>
-      </div>
+        ${hasOpened && !ready && !done
+          ? `<p class="task-wait" data-wait-id="${id}">Wait ${WAIT_SECONDS} seconds...</p>`
+          : ""}
 
-      <div id="taskList" class="task-list"></div>
+        ${done
+          ? '<p class="task-confirmation">Marked complete by you. Not independently verified.</p>'
+          : ""}
+      </article>
+    `;
+  }).join("");
 
-      <div id="unlockPanel" class="unlock-panel hidden">
-        <div class="unlock-icon">✓</div>
-        <h2>Unlock Link Revealed!</h2>
-        <p>All tasks have been marked complete on this device.</p>
-        <a id="deliveryButton" class="primary-button" href="#" target="_blank" rel="noopener">
-          Open File Delivery Bot <span>↗</span>
-        </a>
-      </div>
+  updateProgress();
+}
 
-      <p class="notice">
-        Note: Completion is self-reported. This page does not verify
-        whether you actually completed the tasks.
-      </p>
-    </section>
+async function loadTasks() {
+  if (state.loading) return;
+  state.loading = true;
 
-    <footer>
-      <div class="footer-brand">AG SUB2UNLOCK</div>
-      <p>Powered by AG · Unlock your content</p>
-      <p class="footer-small">Use this service responsibly.</p>
-    </footer>
-  </main>
+  const container = $("#taskList");
+  if (container) container.innerHTML = "<p>Loading tasks...</p>";
 
-  <script src="app.js"></script>
-</body>
-</html>
+  try {
+    const response = await fetch(`${API_BASE}/api/tasks`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.ok || !Array.isArray(data.tasks)) {
+      throw new Error("Invalid task response");
+    }
+
+    state.tasks = data.tasks
+      .filter((task) =>
+        Number.isInteger(Number(task.id)) &&
+        typeof task.title === "string" &&
+        validURL(task.url)
+      )
+      .map((task) => ({
+        id: Number(task.id),
+        title: task.title,
+        kind: task.kind === "daily" ? "daily" : "permanent",
+        url: task.url
+      }));
+
+    // Progress intentionally resets whenever the page loads.
+    state.completed.clear();
+    state.opened.clear();
+
+    renderTasks();
+  } catch (error) {
+    console.error("AG SUB2UNLOCK API error:", error);
+
+    if (container) {
+      container.innerHTML = `
+        <p>Could not load tasks. Check your internet connection.</p>
+        <button type="button" id="retryTasks">Retry</button>
+      `;
+    }
+
+    showStatus("Backend সংযোগ ব্যর্থ। Retry চাপো বা কিছুক্ষণ পরে চেষ্টা করো.", true);
+  } finally {
+    state.loading = false;
+  }
+}
+
+function openTask(id) {
+  const task = state.tasks.find((item) => item.id === id);
+
+  if (!task || state.completed.has(id) || state.opened.has(id)) return;
+
+  if (!validURL(task.url)) {
+    showStatus("Task URL বৈধ নয়।", true);
+    return;
+  }
+
+  // Open immediately from the click to reduce popup-blocking issues.
+  const tab = window.open(task.url, "_blank");
+
+  if (!tab) {
+    showStatus("Browser নতুন tab আটকেছে। Pop-up অনুমতি দিয়ে আবার চেষ্টা করো.", true);
+    return;
+  }
+
+  try {
+    tab.opener = null;
+  } catch {}
+
+  state.opened.set(id, false);
+  renderTasks();
+
+  const started = Date.now();
+
+  const timer = setInterval(() => {
+    if (state.completed.has(id)) {
+      clearInterval(timer);
+      state.timers.delete(id);
+      return;
+    }
+
+    const elapsed = Math.floor((Date.now() - started) / 1000);
+    const remaining = Math.max(0, WAIT_SECONDS - elapsed);
+    const waitLabel = document.querySelector(`[data-wait-id="${id}"]`);
+
+    if (waitLabel) {
+      waitLabel.textContent = remaining
+        ? `Wait ${remaining} seconds...`
+        : "You can now mark this task complete.";
+    }
+
+    if (remaining <= 0) {
+      clearInterval(timer);
+      state.timers.delete(id);
+      state.opened.set(id, true);
+      renderTasks();
+    }
+  }, 250);
+
+  state.timers.set(id, timer);
+}
+
+function completeTask(id) {
+  if (!state.tasks.some((task) => task.id === id)) return;
+  if (state.opened.get(id) !== true) return;
+  if (state.completed.has(id)) return;
+
+  // Self-reported only; this does not verify a YouTube/TikTok action.
+  state.completed.add(id);
+  renderTasks();
+
+  showStatus("Task marked complete. এটি স্বাধীনভাবে যাচাই করা হয়নি.");
+}
+
+document.addEventListener("click", (event) => {
+  const openButton = event.target.closest(".open-task");
+  if (openButton && !openButton.disabled) {
+    openTask(Number(openButton.dataset.id));
+    return;
+  }
+
+  const completeButton = event.target.closest(".complete-task");
+  if (completeButton && !completeButton.disabled) {
+    completeTask(Number(completeButton.dataset.id));
+    return;
+  }
+
+  if (event.target.closest("#retryTasks")) {
+    loadTasks();
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadTasks();
+});
