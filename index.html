@@ -1,0 +1,76 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070914">
+  <title>AG SUB2UNLOCK</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./">
+      <span class="brand-icon">AG</span>
+      <span>SUB<span class="blue">2</span>UNLOCK</span>
+    </a>
+    <span class="live"><i></i> SYSTEM ONLINE</span>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">✦ AG UNLOCK PLATFORM</div>
+      <h1>Complete Tasks.<br><span>Unlock Your File.</span></h1>
+      <p>Complete all 7 tasks to reveal the Telegram delivery link.</p>
+
+      <div class="progress-card">
+        <div class="progress-info">
+          <span>YOUR PROGRESS</span>
+          <strong id="progressText">0 / 7</strong>
+        </div>
+        <div class="progress-track">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div class="progress-bottom">
+          <span id="progressMessage">7 tasks remaining</span>
+          <span id="progressPercent">0%</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="task-section">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">YOUR CHECKLIST</span>
+          <h2>Complete All Tasks</h2>
+        </div>
+        <span class="task-count">7 TASKS</span>
+      </div>
+
+      <div id="taskList" class="task-list"></div>
+
+      <div id="unlockPanel" class="unlock-panel hidden">
+        <div class="unlock-icon">✓</div>
+        <h2>Unlock Link Revealed!</h2>
+        <p>All tasks have been marked complete on this device.</p>
+        <a id="deliveryButton" class="primary-button" href="#" target="_blank" rel="noopener">
+          Open File Delivery Bot <span>↗</span>
+        </a>
+      </div>
+
+      <p class="notice">
+        Note: Completion is self-reported. This page does not verify
+        whether you actually completed the tasks.
+      </p>
+    </section>
+
+    <footer>
+      <div class="footer-brand">AG SUB2UNLOCK</div>
+      <p>Powered by AG · Unlock your content</p>
+      <p class="footer-small">Use this service responsibly.</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
