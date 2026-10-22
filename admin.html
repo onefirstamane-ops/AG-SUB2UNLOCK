@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070914">
+  <title>AG SUB2UNLOCK | Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-wrap{max-width:760px;margin:35px auto;padding:0 16px}
+    .admin-card{padding:22px;margin:18px 0;background:#101426;border:1px solid rgba(142,160,255,.2);border-radius:18px}
+    .admin-card h2{font-size:19px;margin-top:0}
+    .admin-card p,.hint{font-size:12px;color:#939bb5;line-height:1.7}
+    .admin-input,.admin-select{display:block;width:100%;margin:10px 0;padding:13px;border-radius:10px;border:1px solid #303954;background:#080c1a;color:#f3f5ff;font:inherit}
+    .admin-btn{width:100%;padding:13px;border:0;border-radius:10px;background:linear-gradient(90deg,#35c9ff,#9270ff);color:#07111b;font-weight:850;cursor:pointer}
+    .admin-btn.secondary{margin-top:9px;background:#202944;color:#e9edff;border:1px solid #364365}
+    .admin-status{margin-top:12px;color:#40e7a0;font-size:12px;overflow-wrap:anywhere}
+    .admin-header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .admin-badge{font-size:10px;color:#35c9ff;border:1px solid #35c9ff50;padding:7px 9px;border-radius:9px}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./">
+      <span class="brand-icon">AG</span>
+      <span>SUB<span class="blue">2</span>UNLOCK</span>
+    </a>
+    <span class="live">ADMIN PANEL</span>
+  </header>
+
+  <main class="admin-wrap">
+    <section id="loginPanel" class="admin-card">
+      <div class="eyebrow">RESTRICTED AREA</div>
+      <h1>Admin Login</h1>
+      <p>Sign in to access the AG SUB2UNLOCK dashboard.</p>
+      <form id="loginForm">
+        <input id="adminPassword" class="admin-input" type="password"
+          placeholder="Admin password" required autocomplete="current-password">
+        <button class="admin-btn" type="submit">LOGIN →</button>
+      </form>
+      <p id="loginMessage" class="admin-status"></p>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div class="admin-header">
+        <div>
+          <div class="eyebrow">CONTROL CENTER</div>
+          <h1>Admin Dashboard</h1>
+        </div>
+        <span class="admin-badge">AG SYSTEM</span>
+      </div>
+
+      <div class="admin-card">
+        <h2>📊 Dashboard Overview</h2>
+        <p>This page is a frontend layout. Connect a protected backend to display real data.</p>
+        <div class="progress-info">
+          <span>CAMPAIGNS</span>
+          <strong id="campaignCount">—</strong>
+        </div>
+        <div class="progress-info" style="margin-top:14px">
+          <span>FILES UPLOADED</span>
+          <strong>Backend required</strong>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h2>🔗 Task Link Settings</h2>
+        <p>Choose a task and enter its destination URL. This demo does not publish changes to the public website.</p>
+        <select id="taskSelect" class="admin-select">
+          <option value="1">1. YouTube Channel 1</option>
+          <option value="2">2. YouTube Channel 2</option>
+          <option value="3">3. Telegram Community</option>
+          <option value="4">4. TikTok Profile</option>
+          <option value="5">5. Facebook</option>
+          <option value="6">6. Daily YouTube Video</option>
+          <option value="7">7. Daily TikTok Video</option>
+        </select>
+        <input id="taskUrl" class="admin-input" type="url"
+          placeholder="https://example.com" required>
+        <button id="saveLink" class="admin-btn" type="button">SAVE LINK</button>
+        <p id="linkMessage" class="admin-status"></p>
+      </div>
+
+      <div class="admin-card">
+        <h2>📁 Campaign Generator</h2>
+        <p>Generate a campaign URL preview. Real campaign creation and file uploads require a backend.</p>
+        <input id="campaignName" class="admin-input" maxlength="60"
+          placeholder="Campaign name">
+        <button id="generateCampaign" class="admin-btn" type="button">
+          GENERATE PREVIEW
+        </button>
+        <input id="campaignUrl" class="admin-input" readonly
+          placeholder="Generated campaign preview URL">
+        <button id="copyCampaign" class="admin-btn secondary" type="button">
+          COPY URL
+        </button>
+        <p id="campaignMessage" class="admin-status"></p>
+      </div>
+
+      <div class="admin-card">
+        <h2>🤖 Telegram Bots</h2>
+        <p>BOT 1: Link Generator</p>
+        <p>BOT 2: File Delivery</p>
+        <p class="hint">Set bot tokens as private hosting environment variables. Never place tokens in HTML or JavaScript.</p>
+      </div>
+
+      <button id="logout" class="admin-btn secondary" type="button">LOG OUT</button>
+    </section>
+  </main>
+
+  <script>
+    /*
+      DEMO LOGIN ONLY.
+      Do not put a real admin password in frontend code.
+      Replace this with backend authentication before deployment.
+    */
+    const DEMO_PASSWORD = "CHANGE_ME_DEMO_ONLY";
+
+    const loginPanel = document.getElementById("loginPanel");
+    const dashboard = document.getElementById("dashboard");
+    const loginMessage = document.getElementById("loginMessage");
+
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      loginMessage.textContent =
+        "Demo only. Configure secure backend authentication to log in.";
+      loginMessage.style.color = "#ffbd69";
+
+      // Intentionally no frontend password check.
+      // A password embedded in public JavaScript is not secure.
+    });
+
+    document.getElementById("saveLink").addEventListener("click", function() {
+      const urlInput = document.getElementById("taskUrl");
+      const message = document.getElementById("linkMessage");
+
+      try {
+        const url = new URL(urlInput.value);
+        if (url.protocol !== "https:") throw new Error();
+
+        message.textContent =
+          "URL format looks valid. Saving to the real system requires a backend.";
+        message.style.color = "#ffbd69";
+      } catch {
+        message.textContent = "Enter a valid HTTPS URL.";
+        message.style.color = "#ff7d91";
+      }
+    });
+
+    document.getElementById("generateCampaign").addEventListener("click", function() {
+      const name = document.getElementById("campaignName").value.trim();
+      const message = document.getElementById("campaignMessage");
+      const output = document.getElementById("campaignUrl");
+
+      if (!name) {
+        message.textContent = "Enter a campaign name first.";
+        message.style.color = "#ff7d91";
+        return;
+      }
+
+      const code = "preview-" + Math.random().toString(36).slice(2, 9);
+      output.value = location.origin + location.pathname.replace(
+        /admin\.html$/, "index.html"
+      ) + "?code=" + encodeURIComponent(code);
+
+      message.textContent =
+        "Preview only. This does not create a campaign in the database.";
+      message.style.color = "#ffbd69";
+    });
+
+    document.getElementById("copyCampaign").addEventListener("click", async function() {
+      const value = document.getElementById("campaignUrl").value;
+      const message = document.getElementById("campaignMessage");
+
+      if (!value) {
+        message.textContent = "Generate a preview URL first.";
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(value);
+        message.textContent = "Preview URL copied.";
+      } catch {
+        document.getElementById("campaignUrl").select();
+        message.textContent = "Select and copy the URL manually.";
+      }
+    });
+
+    document.getElementById("logout").addEventListener("click", function() {
+      dashboard.classList.add("hidden");
+      loginPanel.classList.remove("hidden");
+      document.getElementById("adminPassword").value = "";
+    });
+  </script>
+</body>
+</html>
