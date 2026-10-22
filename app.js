@@ -1,11 +1,14 @@
 
-/* AG SUB2UNLOCK - Frontend
-   Change DELIVERY_BOT_USERNAME to your real BOT 2 username.
-   This frontend stores completion only in the visitor's browser.
-*/
+/* =====================================
+   AG SUB2UNLOCK
+   Temporary task progress
+   Refresh = Start Again
+===================================== */
 
+// BOT 2-এর আসল username বসাও, @ ছাড়া
 const DELIVERY_BOT_USERNAME = "AGSub2UnlockFileBot";
 
+// সব টাস্কের লিংক
 const tasks = [
   {
     id: 1,
@@ -37,7 +40,7 @@ const tasks = [
     description: "Visit the official TikTok profile.",
     icon: "♪",
     type: "PERMANENT",
-    url: "https://tiktok.com/@agamaneofficial"
+    url: "https://www.tiktok.com/@agamaneofficial"
   },
   {
     id: 5,
@@ -65,25 +68,12 @@ const tasks = [
   }
 ];
 
-// Use a separate completion list for each campaign.
-const campaignCode =
-  new URLSearchParams(window.location.search).get("code") || "default";
+// প্রতিবার পেজ লোড হলে নতুন অগ্রগতি
+let completedTasks = [];
+const openedTasks = new Set();
+const taskTimers = Object.create(null);
 
-const storageKey = "ag_sub2unlock_" + campaignCode;
-
-function loadCompleted() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    return Array.isArray(saved)
-      ? saved.filter(id => tasks.some(task => task.id === id))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-let completedTasks = loadCompleted();
-
+// HTML elements
 const taskList = document.getElementById("taskList");
 const progressText = document.getElementById("progressText");
 const progressBar = document.getElementById("progressBar");
@@ -92,10 +82,7 @@ const progressPercent = document.getElementById("progressPercent");
 const unlockPanel = document.getElementById("unlockPanel");
 const deliveryButton = document.getElementById("deliveryButton");
 
-function saveCompleted() {
-  localStorage.setItem(storageKey, JSON.stringify(completedTasks));
-}
-
+// নিরাপদে টাস্ক কার্ড তৈরি
 function renderTasks() {
   taskList.replaceChildren();
 
@@ -103,7 +90,8 @@ function renderTasks() {
     const isCompleted = completedTasks.includes(task.id);
 
     const card = document.createElement("article");
-    card.className = "task-card" + (isCompleted ? " completed" : "");
+    card.className =
+      "task-card" + (isCompleted ? " completed" : "");
 
     const icon = document.createElement("div");
     icon.className = "task-icon";
@@ -120,9 +108,8 @@ function renderTasks() {
 
     const tag = document.createElement("span");
     tag.className = "task-tag";
-    tag.textContent = task.type === "DAILY"
-      ? "DAILY TASK"
-      : "PERMANENT TASK";
+    tag.textContent =
+      task.type === "DAILY" ? "DAILY TASK" : "PERMANENT TASK";
 
     details.append(title, description, tag);
 
@@ -139,16 +126,36 @@ function renderTasks() {
     const completeButton = document.createElement("button");
     completeButton.className = "complete-button";
     completeButton.type = "button";
+    completeButton.disabled = true;
     completeButton.textContent = isCompleted
       ? "✓ Completed"
       : "I Completed This";
-    completeButton.disabled = isCompleted;
 
+    // টাস্কের লিংক খোলা হলে ৫ সেকেন্ডের টাইমার
+    openButton.addEventListener("click", () => {
+      if (completedTasks.includes(task.id)) return;
+
+      openedTasks.add(task.id);
+      completeButton.disabled = true;
+      completeButton.textContent = "Wait 5 seconds...";
+
+      clearTimeout(taskTimers[task.id]);
+
+      taskTimers[task.id] = setTimeout(() => {
+        if (completedTasks.includes(task.id)) return;
+
+        completeButton.disabled = false;
+        completeButton.textContent = "I Completed This";
+      }, 5000);
+    });
+
+    // ব্যবহারকারী নিজে Completed চাপলে অগ্রগতি বাড়বে
     completeButton.addEventListener("click", () => {
+      if (!openedTasks.has(task.id)) return;
       if (completedTasks.includes(task.id)) return;
 
       completedTasks.push(task.id);
-      saveCompleted();
+
       renderTasks();
     });
 
@@ -160,29 +167,32 @@ function renderTasks() {
   updateProgress();
 }
 
+// Progress এবং unlock panel
 function updateProgress() {
+  const total = tasks.length;
   const count = completedTasks.length;
-  const percent = Math.round((count / tasks.length) * 100);
+  const percent = Math.round((count / total) * 100);
+  const remaining = total - count;
 
-  progressText.textContent = count + " / " + tasks.length;
+  progressText.textContent = count + " / " + total;
   progressBar.style.width = percent + "%";
   progressPercent.textContent = percent + "%";
 
-  const remaining = tasks.length - count;
   progressMessage.textContent = remaining === 0
     ? "All tasks marked complete!"
     : remaining + " tasks remaining";
 
-  if (count === tasks.length) {
+  if (count === total) {
     unlockPanel.classList.remove("hidden");
 
     const username = DELIVERY_BOT_USERNAME.replace(/^@/, "");
+
     deliveryButton.href =
       "https://t.me/" + encodeURIComponent(username);
-
   } else {
     unlockPanel.classList.add("hidden");
   }
 }
 
+// শুরু: প্রতিবার পেজ লোডে শূন্য থেকে
 renderTasks();
